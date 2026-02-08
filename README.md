@@ -31,3 +31,32 @@ O sistema conta com quase 30 tabelas organizadas nos seguintes módulos:
 2. Importe o arquivo `script_banco.sql` localizado na raiz deste projeto.
 
 ---
+
+## 🖼️ Galeria de Módulos do Sistema
+
+Os diagramas de Entidade-Relacionamento (DER) abaixo estão organizados por **responsabilidade lógica**, refletindo a arquitetura modular do sistema.
+
+### 1. Módulo de Identidade e Acesso (IAM)
+
+Responsável pelo **multi-tenancy**, gestão de usuários, setores e perfis de acesso.  
+Garante o isolamento entre instituições, controle de permissões e segurança no processo de autenticação.
+
+### 2. Módulo de Operações (Core)
+
+Núcleo do sistema, onde ocorre o **ciclo completo dos chamados**: abertura, categorização, interação, atribuição, acompanhamento e encerramento.
+
+### 3. Módulo de Patrimônio e Manutenção
+
+Gerencia o **inventário de bens (Assets)** e os **agendamentos de manutenção preventiva e corretiva**, incluindo a geração automática de chamados a partir da execução das manutenções.
+
+### 4. Módulo de Governança e Performance (SLA)
+
+Responsável pelo **histórico de mudanças de status**, auditoria de ações e monitoramento do cumprimento de **prazos e níveis de serviço (SLA)**.
+
+### 5. Módulo de Logística e Recursos (Fulfillment)
+
+Dá suporte à execução operacional, contemplando a **gestão de equipes técnicas**, registro de deslocamentos (quilometragem) e **controle de materiais e peças utilizadas**.
+
+### 💡 Observação de Arquitetura
+
+A separação do sistema em módulos independentes facilita a **escalabilidade**, **manutenção**, **auditoria** e a evolução contínua de cada domínio funcional.
