@@ -509,8 +509,51 @@ CREATE TABLE ticket_parts (
     CONSTRAINT fk_tp_user FOREIGN KEY (requested_by_user_id) REFERENCES users(id)
 );
 
+-- ============================================================
+-- TABELA: ticket_assets (Correção para Requisito da API)
+-- Finalidade: Vínculo N:N entre Chamados e Patrimônio
+-- ============================================================
+CREATE TABLE IF NOT EXISTS ticket_assets (
+    ticket_id BIGINT NOT NULL,
+    asset_id BIGINT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    
+    -- Chave Primária Composta (evita duplicidade do mesmo ativo no mesmo chamado)
+    PRIMARY KEY (ticket_id, asset_id),
+    
+    -- Chaves Estrangeiras com deleção em cascata
+    CONSTRAINT fk_tasset_ticket 
+        FOREIGN KEY (ticket_id) REFERENCES tickets(id) 
+        ON DELETE CASCADE,
+        
+    CONSTRAINT fk_tasset_asset 
+        FOREIGN KEY (asset_id) REFERENCES assets(id) 
+        ON DELETE CASCADE
+);
+
+USE helpdesk_proj_extensao_db;
 
 
+-- ============================================================
+-- ÍNDICES DE PERFORMANCE
+-- Fonte: Campos_Banco_de_dados.pdf
+-- ============================================================
+
+-- Acelera: "Meus chamados" (Filtrar por tenant e usuário)
+CREATE INDEX idx_tickets_requester 
+ON tickets (tenant_id, requester_user_id);
+
+-- Acelera: Dashboard e Kanban (Filtrar por status)
+CREATE INDEX idx_tickets_status 
+ON tickets (tenant_id, status_id);
+
+-- Acelera: Relatórios de SLA (Filtrar por data de abertura)
+CREATE INDEX idx_tickets_opened_at 
+ON tickets (tenant_id, opened_at);
+
+-- Acelera: Notificações não lidas (Topo da tela)
+CREATE INDEX idx_notif_user_unread 
+ON notifications (tenant_id, user_id, read_at);
 
 
 
