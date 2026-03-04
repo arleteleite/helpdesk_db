@@ -555,13 +555,94 @@ ON tickets (tenant_id, opened_at);
 CREATE INDEX idx_notif_user_unread 
 ON notifications (tenant_id, user_id, read_at);
 
+-- Representa a Ordem de Serviço física
+CREATE TABLE service_orders (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    tenant_id BIGINT NOT NULL,
+    ticket_id BIGINT NOT NULL,
+    os_number VARCHAR(30) NOT NULL UNIQUE,
+    scheduled_date DATETIME NULL,
+    started_at DATETIME NULL,
+    finished_at DATETIME NULL,
+    status ENUM('PENDENTE', 'EM_EXECUCAO', 'CONCLUIDA', 'CANCELADA') DEFAULT 'PENDENTE',
+    technical_notes TEXT NULL,
+    
+    CONSTRAINT fk_os_tenant FOREIGN KEY (tenant_id) REFERENCES tenants(id),
+    CONSTRAINT fk_os_ticket FOREIGN KEY (ticket_id) REFERENCES tickets(id) ON DELETE CASCADE
+);
 
+-- Assinaturas e Atestos (Validade jurídica do serviço)
+CREATE TABLE service_attestations (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    tenant_id BIGINT NOT NULL,
+    service_order_id BIGINT NULL,
+    ticket_id BIGINT NULL,
+    user_id BIGINT NOT NULL, -- Quem assinou
+    signature_hash TEXT NULL, -- Para assinatura digital
+    ip_address VARCHAR(45) NULL,
+    attested_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    
+    CONSTRAINT fk_attest_os FOREIGN KEY (service_order_id) REFERENCES service_orders(id),
+    CONSTRAINT fk_attest_ticket FOREIGN KEY (ticket_id) REFERENCES tickets(id)
+);
 
+-- Empresas prestadoras de serviço
+CREATE TABLE external_companies (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    tenant_id BIGINT NOT NULL,
+    name VARCHAR(120) NOT NULL,
+    cnpj VARCHAR(20) UNIQUE,
+    contact_email VARCHAR(190),
+    is_active TINYINT DEFAULT 1,
+    
+    CONSTRAINT fk_company_tenant FOREIGN KEY (tenant_id) REFERENCES tenants(id)
+);
 
+-- Notas Fiscais recebidas das terceirizadas
+CREATE TABLE invoices (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    tenant_id BIGINT NOT NULL,
+    company_id BIGINT NOT NULL,
+    invoice_number VARCHAR(50) NOT NULL,
+    amount DECIMAL(10,2) NOT NULL,
+    status ENUM('RECEBIDA', 'EM_CONFERENCIA', 'PAGA', 'GLOSADA') DEFAULT 'RECEBIDA',
+    issue_date DATE NOT NULL,
+    
+    CONSTRAINT fk_inv_company FOREIGN KEY (company_id) REFERENCES external_companies(id)
+);
 
+-- Glosas (Descontos por descumprimento de SLA ou má execução)
+CREATE TABLE invoice_glosas (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    invoice_id BIGINT NOT NULL,
+    reason TEXT NOT NULL,
+    discount_amount DECIMAL(10,2) NOT NULL,
+    applied_by_user_id BIGINT NOT NULL,
+    
+    CONSTRAINT fk_glosa_invoice FOREIGN KEY (invoice_id) REFERENCES invoices(id)
+);
 
+-- Histórico imutável de movimentação
+CREATE TABLE inventory_transactions (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    tenant_id BIGINT NOT NULL,
+    part_id BIGINT NOT NULL,
+    user_id BIGINT NOT NULL, -- Responsável pela ação
+    type ENUM('ENTRADA', 'SAIDA', 'RESERVA', 'DEVOLUCAO', 'AJUSTE') NOT NULL,
+    quantity INT NOT NULL,
+    ticket_id BIGINT NULL, -- Se for saída para um chamado
+    observation VARCHAR(255),
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    
+    CONSTRAINT fk_trans_part FOREIGN KEY (part_id) REFERENCES parts(id),
+    CONSTRAINT fk_trans_ticket FOREIGN KEY (ticket_id) REFERENCES tickets(id)
+);
 
-
+-- 1. Ajustes na tabela de TICKETS
+-- Adiciona campo para pesquisa de satisfação e garante o vínculo com departamento
+ALTER TABLE tickets 
+    MODIFY COLUMN department_id BIGINT NOT NULL 
+    COMMENT 'Setor de origem do chamado para fins de histórico';
 
 
 
